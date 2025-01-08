@@ -18,14 +18,26 @@ fn draw_circle(
         Mesh2d(meshes.add(Circle::new(20.))),
         MeshMaterial2d(materials.add(Color::hsl(260 as f32, 0.95, 0.7))),
         Transform::from_xyz(
-            // Distribute shapes from -X_EXTENT/2 to +X_EXTENT/2.
-            0.,
+            -300.,
             100.,
             200.,
         ),
         Velocity(Vec2::new(10.,10.)),
         Acceleration(Vec2::new(0.,0.)),
         Mass(1.),
-        Forces(vec![Vec2::new(0.,-10.), Vec2::new(-8.,0.)])
+        Forces(vec![]),
+    ));
+    commands.spawn((
+        Mesh2d(meshes.add(Circle::new(20.))),
+        MeshMaterial2d(materials.add(Color::hsl(160 as f32, 0.95, 0.7))),
+        Transform::from_xyz(
+            -300.,
+            0.,
+            200.,
+        ),
+        Velocity(Vec2::new(10.,10.)),
+        Acceleration(Vec2::new(0.,-9.8)),
+        Mass(1.),
+        Forces(vec![]),
     ));
 }

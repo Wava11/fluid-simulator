@@ -11,10 +11,12 @@ impl Plugin for ForcesPlugin {
     }
 }
 
-fn apply_forces(mut query: Query<(&Forces, &Mass, &mut Acceleration)>) {
-    for (Forces(forces), Mass(mass), mut acceleration) in query.iter_mut(){
-        acceleration.0 = forces.iter().sum::<Vec2>() / mass;
+fn apply_forces(mut query: Query<(&mut Forces, &Mass, &mut Acceleration)>) {
+    for (mut forces, Mass(mass), mut acceleration) in query.iter_mut(){
+        acceleration.0 = forces.0.iter().sum::<Vec2>() / mass;
+        forces.0.clear();
     }
+
 }
 
 #[derive(Component)]

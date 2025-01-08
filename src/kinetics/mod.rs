@@ -2,6 +2,7 @@ pub mod acceleration;
 pub mod forces;
 pub mod mass;
 pub mod velocity;
+pub mod gravity;
 
 use bevy::prelude::*;
 
@@ -13,6 +14,7 @@ impl Plugin for KineticsPlugin {
             velocity::VelocityPlugin,
             acceleration::AccelerationPlugin,
             forces::ForcesPlugin,
+            gravity::GravityPlugin
         ));
     }
 }
