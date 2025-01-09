@@ -21,10 +21,10 @@ pub fn enforce_bounds(
 
         velocity.0 = new_velocity(particle_center, particle, &velocity);
 
-        // transform.translation = transform.translation.clamp(
-        //     Vec3::new(MIN_X - particle.radius, MIN_Y - particle.radius, f32::MIN),
-        //     Vec3::new(MAX_X + particle.radius, MAX_Y + particle.radius, f32::MAX),
-        // );
+        transform.translation = transform.translation.clamp(
+            Vec3::new(MIN_X - particle.radius/4., MIN_Y - particle.radius/4., f32::MIN),
+            Vec3::new(MAX_X + particle.radius/4., MAX_Y + particle.radius/4., f32::MAX),
+        );
     }
 }
 
