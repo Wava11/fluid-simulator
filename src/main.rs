@@ -3,13 +3,16 @@ use kinetics::{KineticsPlugin};
 
 mod draw;
 mod kinetics;
+mod bounds;
+mod fluids;
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
             KineticsPlugin,
-            draw::DrawPlugin
+            draw::DrawPlugin,
+            bounds::BoundsPlugin
         ))
         .add_systems(Startup, spawn_camera)
         .run();

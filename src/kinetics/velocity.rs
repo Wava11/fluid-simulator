@@ -1,10 +1,12 @@
 use bevy::prelude::*;
 
+use super::acceleration::accelerate_entities;
+
 pub struct VelocityPlugin;
 
 impl Plugin for VelocityPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, move_entities);
+        app.add_systems(Update, move_entities.after(accelerate_entities));
     }
 }
 

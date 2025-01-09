@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::kinetics::{acceleration::Acceleration, forces::Forces, mass::Mass, velocity::Velocity};
+use crate::{fluids::particle::FluidParticle, kinetics::{acceleration::Acceleration, forces::Forces, mass::Mass, velocity::Velocity}};
 
 pub struct DrawPlugin;
 
@@ -14,30 +14,22 @@ fn draw_circle(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands.spawn((
-        Mesh2d(meshes.add(Circle::new(20.))),
-        MeshMaterial2d(materials.add(Color::hsl(260 as f32, 0.95, 0.7))),
-        Transform::from_xyz(
-            -300.,
-            100.,
-            200.,
-        ),
-        Velocity(Vec2::new(10.,10.)),
-        Acceleration(Vec2::new(0.,0.)),
-        Mass(1.),
-        Forces(vec![]),
-    ));
-    commands.spawn((
-        Mesh2d(meshes.add(Circle::new(20.))),
-        MeshMaterial2d(materials.add(Color::hsl(160 as f32, 0.95, 0.7))),
-        Transform::from_xyz(
-            -300.,
-            0.,
-            200.,
-        ),
-        Velocity(Vec2::new(10.,10.)),
-        Acceleration(Vec2::new(0.,-9.8)),
-        Mass(1.),
-        Forces(vec![]),
-    ));
+    let p1 = FluidParticle{radius:20.};
+
+    for i in 1..2000 {
+        commands.spawn((
+            p1,
+            Mesh2d(meshes.add(p1)),
+            MeshMaterial2d(materials.add(Color::hsl((260/i) as f32 , 0.95, 0.7))),
+            Transform::from_xyz(
+                (400/i)as f32 -200.  ,
+                (200/i) as f32,
+                i as f32,
+            ),
+            Velocity(Vec2::new(10.,10.)),
+            Acceleration(Vec2::new(0.,0.)),
+            Mass(1.),
+            Forces(vec![]),
+        ));
+    }
 }
