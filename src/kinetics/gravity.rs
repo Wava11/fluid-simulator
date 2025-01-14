@@ -8,7 +8,7 @@ pub struct GravityPlugin;
 
 impl Plugin for GravityPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, apply_gravity.before(enforce_bounds));
+        app.add_systems(FixedUpdate, apply_gravity.before(enforce_bounds));
     }
 }
 

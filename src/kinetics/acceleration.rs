@@ -7,7 +7,7 @@ pub struct AccelerationPlugin;
 
 impl Plugin for AccelerationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, accelerate_entities.after(enforce_bounds).after(apply_forces));
+        app.add_systems(FixedUpdate, accelerate_entities.after(enforce_bounds).after(apply_forces));
     }
 }
 

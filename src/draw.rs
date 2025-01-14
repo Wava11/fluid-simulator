@@ -13,7 +13,7 @@ impl Plugin for DrawPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SpawnTimer(Timer::from_seconds(0.1, TimerMode::Repeating)))
             .add_systems(Startup, draw_circle);
-            // .add_systems(Update, continuously_spawn.run_if(on_timer(Duration::from_millis(100))));
+        // .add_systems(Update, continuously_spawn.run_if(on_timer(Duration::from_millis(100))));
     }
 }
 
@@ -24,8 +24,11 @@ fn draw_circle(
 ) {
     let mut rng = StdRng::seed_from_u64(40);
 
-    let p1 = FluidParticle { radius: 4. };
-    for i in 1..50000 {
+    let p1 = FluidParticle {
+        radius: 4.,
+        restitution_coeff: 0.8,
+    };
+    for i in 1..20 {
         spawn_random_particle(&mut commands, &mut meshes, &mut materials, &mut rng, p1, i);
     }
 }
@@ -47,13 +50,14 @@ fn spawn_random_particle(
             rng.gen_range(-150.0..150.0),
             0 as f32,
         ),
-        Velocity(Vec2::new(0., 0.)),
+        // Velocity(Vec2::new(-5.,0.)),
+        Velocity(Vec2::new(rng.gen_range(-5.0..5.), rng.gen_range(-5.0..5.))),
         // Velocity(Vec2::new(10., 10.)),
         Acceleration(Vec2::new(0., 0.)),
         Mass(1.),
         // Mass(rng.gen_range(0.1..2.)),
         // Forces(vec![Vec2::new(rng.gen_range(-20.0..20.), rng.gen_range(0.0..30.))]),
-        // Forces(vec![]),
+        Forces(vec![]),
     ));
 }
 
@@ -65,17 +69,19 @@ fn continuously_spawn(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // if timer.0.tick(time.delta()).just_finished() {
-        let mut rng = StdRng::seed_from_u64(40);
-        let p1 = FluidParticle { radius: 4. };
-        spawn_random_particle(
-            &mut commands,
-            &mut meshes,
-            &mut materials,
-            &mut rng,
-            p1,
-            0
-            // time.elapsed().as_millis() as i32,
-        );
+    let mut rng = StdRng::seed_from_u64(40);
+    let p1 = FluidParticle {
+        radius: 4.,
+        restitution_coeff: 0.8,
+    };
+    spawn_random_particle(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        &mut rng,
+        p1,
+        0, // time.elapsed().as_millis() as i32,
+    );
     // }
 }
 
