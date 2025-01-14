@@ -26,7 +26,7 @@ fn draw_circle(
 
     let p1 = FluidParticle {
         radius: 4.,
-        restitution_coeff: 0.8,
+        restitution_coeff: 0.95,
     };
     for i in 1..200 {
         spawn_random_particle(&mut commands, &mut meshes, &mut materials, &mut rng, p1, i);
@@ -68,7 +68,7 @@ fn continuously_spawn(
     let mut rng = StdRng::seed_from_u64(40);
     let p1 = FluidParticle {
         radius: 4.,
-        restitution_coeff: 0.8,
+        restitution_coeff: 0.95,
     };
     spawn_random_particle(
         &mut commands,

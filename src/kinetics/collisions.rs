@@ -1,16 +1,31 @@
-// use crate::bounds::enforce_bounds;
+use crate::{bounds::enforce_bounds, fluids::particle::FluidParticle};
 
-// use super::{acceleration::accelerate_entities, forces::apply_forces, velocity::Velocity};
-// use bevy::prelude::*;
+use super::{
+    acceleration::accelerate_entities,
+    forces::{apply_forces, Forces},
+    mass::Mass,
+    velocity::{self, Velocity},
+};
+use bevy::{prelude::*, transform};
 
-// pub struct CollisionsPlugin;
+pub struct CollisionsPlugin;
 
-// impl Plugin for CollisionsPlugin {
-//     fn build(&self, app: &mut App) {
-//         app.add_systems(Update, apply_collisions.before(accelerate_entities));
-//     }
-// }
+impl Plugin for CollisionsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(FixedUpdate, apply_collisions.before(accelerate_entities));
+    }
+}
 
-// fn apply_collisions(mut query: Query<(&Acceleration, &mut Velocity)>) -> () {
-    
-// }
+fn apply_collisions(
+    mut query: Query<(
+        &FluidParticle,
+        &mut Transform,
+        &Mass,
+        &Velocity,
+        &mut Forces,
+    )>,
+) {
+    for (particle, transform, Mass(mass), Velocity(velocity), mut forces) in query.iter() {
+        
+    }
+}
