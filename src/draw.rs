@@ -28,7 +28,7 @@ fn draw_circle(
         radius: 4.,
         restitution_coeff: 0.8,
     };
-    for i in 1..20 {
+    for i in 1..200 {
         spawn_random_particle(&mut commands, &mut meshes, &mut materials, &mut rng, p1, i);
     }
 }
@@ -50,13 +50,9 @@ fn spawn_random_particle(
             rng.gen_range(-150.0..150.0),
             0 as f32,
         ),
-        // Velocity(Vec2::new(-5.,0.)),
         Velocity(Vec2::new(rng.gen_range(-5.0..5.), rng.gen_range(-5.0..5.))),
-        // Velocity(Vec2::new(10., 10.)),
         Acceleration(Vec2::new(0., 0.)),
         Mass(1.),
-        // Mass(rng.gen_range(0.1..2.)),
-        // Forces(vec![Vec2::new(rng.gen_range(-20.0..20.), rng.gen_range(0.0..30.))]),
         Forces(vec![]),
     ));
 }

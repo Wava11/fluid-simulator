@@ -15,6 +15,7 @@ fn main() {
             bounds::BoundsPlugin
         ))
         .add_systems(Startup, spawn_camera)
+        .insert_resource(Time::<Fixed>::from_hz(144.))
         .run();
 }
 
