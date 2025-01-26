@@ -1,27 +1,19 @@
 use core::f32;
 
-use bevy::{
-    math::{NormedVectorSpace, VectorSpace},
-    prelude::*,
-};
+use bevy::
+    prelude::*
+;
 
 use crate::{
     fluids::particle::FluidParticle,
     kinetics::{
-        acceleration::{self, Acceleration},
-        forces::{apply_forces, Forces},
         mass::Mass,
-        velocity::{self, Velocity},
+        velocity::Velocity,
     },
 };
 
-pub struct BoundsPlugin;
+use super::forces::Forces;
 
-impl Plugin for BoundsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, enforce_bounds.before(apply_forces));
-    }
-}
 
 pub fn enforce_bounds(
     time: Res<Time>,
@@ -39,18 +31,20 @@ pub fn enforce_bounds(
         let collision_force =
             calculate_collision_force(particle_center, &particle, mass, velocity, &time);
 
-        forces.0.push(collision_force);
+        if collision_force!=Vec2::ZERO {
+            forces.0.push(collision_force);
+        }
 
         if collision_force.x != 0. || collision_force.y != 0. {
             transform.translation = transform.translation.clamp(
                 Vec3::new(
-                    MIN_X + 2.*particle.radius,
-                    MIN_Y + 2.*particle.radius,
+                    MIN_X + particle.radius,
+                    MIN_Y + particle.radius,
                     f32::MIN,
                 ),
                 Vec3::new(
-                    MAX_X - 2.*particle.radius,
-                    MAX_Y - 2.*particle.radius,
+                    MAX_X - particle.radius,
+                    MAX_Y - particle.radius,
                     f32::MAX,
                 ),
             );

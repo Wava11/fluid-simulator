@@ -1,15 +1,6 @@
-use crate::bounds::enforce_bounds;
-
-use super::{forces::apply_forces, velocity::Velocity};
+use super::velocity::Velocity;
 use bevy::prelude::*;
 
-pub struct AccelerationPlugin;
-
-impl Plugin for AccelerationPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, accelerate_entities.after(apply_forces));
-    }
-}
 
 #[derive(Component)]
 pub struct Acceleration(pub Vec2);

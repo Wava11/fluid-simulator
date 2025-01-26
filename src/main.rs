@@ -1,10 +1,11 @@
-use bevy::{prelude::*};
-use kinetics::{KineticsPlugin};
+use bevy::ecs::schedule::ExecutorKind;
+use bevy::prelude::*;
+use kinetics::KineticsPlugin;
 
 mod draw;
-mod kinetics;
-mod bounds;
+mod fps;
 mod fluids;
+mod kinetics;
 
 fn main() {
     App::new()
@@ -12,7 +13,7 @@ fn main() {
             DefaultPlugins,
             KineticsPlugin,
             draw::DrawPlugin,
-            bounds::BoundsPlugin
+            fps::FpsPlugin
         ))
         .add_systems(Startup, spawn_camera)
         .insert_resource(Time::<Fixed>::from_hz(144.))
