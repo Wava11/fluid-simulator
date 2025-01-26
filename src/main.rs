@@ -3,9 +3,10 @@ use bevy::prelude::*;
 use kinetics::KineticsPlugin;
 
 mod draw;
-mod fps;
 mod fluids;
+mod fps;
 mod kinetics;
+mod particles_counter;
 
 fn main() {
     App::new()
@@ -13,7 +14,8 @@ fn main() {
             DefaultPlugins,
             KineticsPlugin,
             draw::DrawPlugin,
-            fps::FpsPlugin
+            fps::FpsPlugin,
+            particles_counter::ParticlesCounterPlugin,
         ))
         .add_systems(Startup, spawn_camera)
         .insert_resource(Time::<Fixed>::from_hz(144.))
