@@ -22,7 +22,7 @@ fn init_maps(mut commands: Commands) {
         map: HashMap::new(),
     });
     commands.insert_resource(PositionHashMap::new(
-        40,
+        10,
         MIN_X as f32,
         MAX_X as f32,
         MIN_Y as f32,

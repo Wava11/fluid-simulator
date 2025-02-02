@@ -1,12 +1,13 @@
 use std::time::Instant;
 
 use super::{forces::Forces, mass::Mass, velocity::Velocity};
-use crate::fluids::particle::FluidParticle;
+use crate::{fluids::particle::FluidParticle, performance_monitor};
 use bevy::{prelude::*, utils::HashSet};
 
 pub mod position_hashing;
 
 pub fn apply_collisions(
+    mut collision_detection_duration: ResMut<performance_monitor::CollisionDetectionDuration>,
     position_hash_map: Res<position_hashing::PositionHashMap>,
     time: Res<Time>,
     mut query: Query<(
@@ -17,8 +18,7 @@ pub fn apply_collisions(
         &mut Forces,
     )>,
 ) {
-
-    // let start = Instant::now();
+    let start = Instant::now();
 
     let mut collided_pairs = HashSet::<UnorderedEntitiesPair>::new();
     for (x, row_sets) in position_hash_map.map.iter().enumerate() {
@@ -45,7 +45,7 @@ pub fn apply_collisions(
         }
     }
 
-////////////////////////////////////
+    ////////////////////////////////////
 
     // let mut pairs = query.iter_combinations_mut();
     // while let Some(
@@ -58,8 +58,7 @@ pub fn apply_collisions(
     //     );
     // }
 
-    // let duration = start.elapsed();
-    // println!("{:?}",duration);
+    collision_detection_duration.0 = start.elapsed();
 }
 
 fn collide_particles(

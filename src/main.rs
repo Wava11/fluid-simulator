@@ -4,7 +4,7 @@ use kinetics::KineticsPlugin;
 
 mod draw;
 mod fluids;
-mod fps;
+mod performance_monitor;
 mod kinetics;
 mod particles_counter;
 
@@ -14,7 +14,7 @@ fn main() {
             DefaultPlugins,
             KineticsPlugin,
             draw::DrawPlugin,
-            fps::FpsPlugin,
+            performance_monitor::PerformanceMonitorPlugin,
             particles_counter::ParticlesCounterPlugin,
         ))
         .add_systems(Startup, spawn_camera)
