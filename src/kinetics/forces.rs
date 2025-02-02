@@ -20,4 +20,4 @@ pub fn apply_forces(mut query: Query<(&mut Forces, &Mass, &mut Acceleration)>) {
 #[derive(Component, Clone)]
 pub struct Forces(pub Vec<Vec2>);
 
-const MAX_VELOCITY_LENGTH: f32 = 400.;
+const MAX_VELOCITY_LENGTH: f32 = 800.;
