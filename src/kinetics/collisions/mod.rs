@@ -18,7 +18,7 @@ pub fn apply_collisions(
     )>,
 ) {
 
-    let start = Instant::now();
+    // let start = Instant::now();
 
     let mut collided_pairs = HashSet::<UnorderedEntitiesPair>::new();
     for (x, row_sets) in position_hash_map.map.iter().enumerate() {
@@ -58,8 +58,8 @@ pub fn apply_collisions(
     //     );
     // }
 
-    let duration = start.elapsed();
-    println!("{:?}",duration);
+    // let duration = start.elapsed();
+    // println!("{:?}",duration);
 }
 
 fn collide_particles(

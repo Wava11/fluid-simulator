@@ -18,7 +18,7 @@ fn main() {
             particles_counter::ParticlesCounterPlugin,
         ))
         .add_systems(Startup, spawn_camera)
-        .insert_resource(Time::<Fixed>::from_hz(100.))
+        .insert_resource(Time::<Fixed>::from_hz(144.))
         .run();
 }
 

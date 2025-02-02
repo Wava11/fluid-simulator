@@ -90,9 +90,7 @@ impl PositionHashMap {
     fn update(&mut self, prev_position: Vec2, curr_position: Vec2, entity: Entity) {
         let (prev_cell_x, prev_cell_y) = self.cell_idxs_of(prev_position);
         let (curr_cell_x, curr_cell_y) = self.cell_idxs_of(curr_position);
-        if curr_cell_y >= 10 {
-            println!("{:?}", curr_position);
-        }
+
         self.map[prev_cell_x][prev_cell_y].remove(&entity);
         self.map[curr_cell_x][curr_cell_y].insert(entity);
     }
