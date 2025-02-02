@@ -81,7 +81,7 @@ fn calculate_collision_force(
 }
 
 
-const MIN_X: f32 = -400.;
-const MAX_X: f32 = 400.;
-const MIN_Y: f32 = -200.;
-const MAX_Y: f32 = 200.;
+pub const MIN_X: f32 = -400.;
+pub const MAX_X: f32 = 400.;
+pub const MIN_Y: f32 = -200.;
+pub const MAX_Y: f32 = 200.;

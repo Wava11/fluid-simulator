@@ -1,9 +1,13 @@
-use crate::fluids::particle::FluidParticle;
+use std::time::Instant;
 
 use super::{forces::Forces, mass::Mass, velocity::Velocity};
-use bevy::prelude::*;
+use crate::fluids::particle::FluidParticle;
+use bevy::{prelude::*, utils::HashSet};
+
+pub mod position_hashing;
 
 pub fn apply_collisions(
+    position_hash_map: Res<position_hashing::PositionHashMap>,
     time: Res<Time>,
     mut query: Query<(
         &FluidParticle,
@@ -13,43 +17,96 @@ pub fn apply_collisions(
         &mut Forces,
     )>,
 ) {
-    let mut pairs = query.iter_combinations_mut();
-    while let Some(
-        [(particle1, mut transform1, mass1, velocity1, mut forces1), (particle2, mut transform2, mass2, velocity2, mut forces2)],
-    ) = pairs.fetch_next()
-    {
-        let p1_center = transform1.translation.xy();
-        let p2_center = transform2.translation.xy();
-        let collidable_p1 = CollidableParticle {
-            mass: mass1,
-            particle: particle1,
-            particle_center: p1_center,
-            velocity: velocity1,
-        };
-        let collidable_p2 = CollidableParticle {
-            mass: mass2,
-            particle: particle2,
-            particle_center: p2_center,
-            velocity: velocity2,
-        };
-        let (force1, force2) = calculate_collision_forces(collidable_p1, collidable_p2, &time);
-        if force1 != Vec2::ZERO {
-            forces1.0.push(force1);
-        }
-        if force2 != Vec2::ZERO {
-            forces2.0.push(force2);
-        }
 
-        if collidable_p1.is_colliding(&collidable_p2) {
-            translate_particles_to_not_intersect(
-                *particle1,
-                *particle2,
-                &mut transform1,
-                &mut transform2,
-                *mass1,
-                *mass2,
-            );
+    let start = Instant::now();
+
+    let mut collided_pairs = HashSet::<UnorderedEntitiesPair>::new();
+    for (x, row_sets) in position_hash_map.map.iter().enumerate() {
+        for (y, cell_set) in row_sets.iter().enumerate() {
+            let adjacent_cells_particles = position_hash_map.neighbouring_cells_particles(x, y);
+            for entity1 in cell_set {
+                for entity2 in adjacent_cells_particles.iter() {
+                    let unordered_entities_pair = UnorderedEntitiesPair::new(*entity1, *entity2);
+                    if !collided_pairs.contains(&unordered_entities_pair) {
+                        let query_result = query.get_many_mut([*entity1, *entity2]);
+                        if let Ok(
+                            [(particle1, transform1, mass1, velocity1, forces1), (particle2, transform2, mass2, velocity2, forces2)],
+                        ) = query_result
+                        {
+                            collide_particles(
+                                &time, particle1, transform1, mass1, velocity1, forces1, particle2,
+                                transform2, mass2, velocity2, forces2,
+                            );
+                        }
+                        collided_pairs.insert(unordered_entities_pair);
+                    }
+                }
+            }
         }
+    }
+
+////////////////////////////////////
+
+    // let mut pairs = query.iter_combinations_mut();
+    // while let Some(
+    //     [(particle1, transform1, mass1, velocity1, forces1), (particle2, mut transform2, mass2, velocity2, mut forces2)],
+    // ) = pairs.fetch_next()
+    // {
+    //     collide_particles(
+    //         &time, particle1, transform1, mass1, velocity1, forces1, particle2, transform2, mass2,
+    //         velocity2, forces2,
+    //     );
+    // }
+
+    let duration = start.elapsed();
+    println!("{:?}",duration);
+}
+
+fn collide_particles(
+    time: &Res<'_, Time>,
+    particle1: &FluidParticle,
+    mut transform1: Mut<'_, Transform>,
+    mass1: &Mass,
+    velocity1: &Velocity,
+    mut forces1: Mut<'_, Forces>,
+    particle2: &FluidParticle,
+    mut transform2: Mut<'_, Transform>,
+    mass2: &Mass,
+    velocity2: &Velocity,
+    mut forces2: Mut<'_, Forces>,
+) {
+    let p1_center = transform1.translation.xy();
+    let p2_center = transform2.translation.xy();
+
+    let collidable_p1 = CollidableParticle {
+        mass: mass1,
+        particle: particle1,
+        particle_center: p1_center,
+        velocity: velocity1,
+    };
+    let collidable_p2 = CollidableParticle {
+        mass: mass2,
+        particle: particle2,
+        particle_center: p2_center,
+        velocity: velocity2,
+    };
+    let (force1, force2) = calculate_collision_forces(collidable_p1, collidable_p2, time);
+    if force1 != Vec2::ZERO {
+        forces1.0.push(force1);
+    }
+    if force2 != Vec2::ZERO {
+        forces2.0.push(force2);
+    }
+
+    if collidable_p1.is_colliding(&collidable_p2) {
+        translate_particles_to_not_intersect(
+            *particle1,
+            *particle2,
+            &mut transform1,
+            &mut transform2,
+            *mass1,
+            *mass2,
+        );
     }
 }
 
@@ -144,5 +201,20 @@ impl<'a> CollidableParticle<'a> {
         let relative_velocity = other.velocity.0 - self.velocity.0;
         let relative_velocity_projected_onto_collision_line = relative_velocity.dot(collision_line);
         relative_velocity_projected_onto_collision_line > 0.
+    }
+}
+
+#[derive(Eq, Hash, PartialEq)]
+struct UnorderedEntitiesPair {
+    entities: (Entity, Entity),
+}
+
+impl UnorderedEntitiesPair {
+    fn new(e1: Entity, e2: Entity) -> UnorderedEntitiesPair {
+        if e1 < e2 {
+            UnorderedEntitiesPair { entities: (e1, e2) }
+        } else {
+            UnorderedEntitiesPair { entities: (e2, e1) }
+        }
     }
 }

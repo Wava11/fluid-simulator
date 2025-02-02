@@ -14,8 +14,8 @@ impl Plugin for DrawPlugin {
     fn build(&self, app: &mut App) {
         app
         .add_systems(Startup, draw_circle)
-        .insert_resource(SpawnTimer(Timer::from_seconds(0.1, TimerMode::Repeating)))
-        .add_systems(Update, continuously_spawn.run_if(on_timer(Duration::from_millis(10))));
+        .insert_resource(SpawnTimer(Timer::from_seconds(0.1, TimerMode::Repeating)));
+        // .add_systems(Update, continuously_spawn.run_if(on_timer(Duration::from_millis(10))));
     }
 }
 
@@ -30,7 +30,7 @@ fn draw_circle(
         radius: 4.,
         restitution_coeff: 0.97,
     };
-    for _ in 1..100 {
+    for _ in 1..1500 {
         spawn_random_particle(&mut commands, &mut meshes, &mut materials, &mut rng, p1);
     }
 
