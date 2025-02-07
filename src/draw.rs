@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use crate::{
     fluids::particle::FluidParticle,
-    kinetics::{acceleration::Acceleration, forces::Forces, mass::Mass, velocity::Velocity},
+    kinetics::{acceleration::Acceleration, bounds::{MAX_X, MAX_Y, MIN_X, MIN_Y}, forces::Forces, mass::Mass, velocity::Velocity},
 };
-use bevy::{prelude::*, time::common_conditions::on_timer};
+use bevy::{math::VectorSpace, prelude::*, time::common_conditions::on_timer};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 pub struct DrawPlugin;
@@ -31,8 +31,15 @@ fn draw_circle(
         radius: 3.,
         restitution_coeff: 0.97,
     };
-    for _ in 1..4000 {
-        spawn_random_particle(&mut commands, &mut meshes, &mut materials, &mut rng, p1);
+    for _ in 1..1500 {
+        spawn_random_particle(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            &mut rng,
+            p1,
+            Mass(1.),
+        );
     }
 }
 
@@ -42,19 +49,21 @@ fn spawn_random_particle(
     materials: &mut ResMut<Assets<ColorMaterial>>,
     rng: &mut StdRng,
     p1: FluidParticle,
+    mass: Mass,
 ) {
     commands.spawn((
         p1,
         Mesh2d(meshes.add(p1)),
         MeshMaterial2d(materials.add(Color::hsl(rng.gen_range(0.0..360.), 0.95, 0.7))),
         Transform::from_xyz(
-            rng.gen_range(-300.0..300.0),
-            rng.gen_range(-150.0..150.0),
+            rng.gen_range(MIN_X..MAX_X),
+            rng.gen_range(MIN_Y..MAX_Y),
             0 as f32,
         ),
+        // Velocity(Vec2::ZERO),
         Velocity(Vec2::new(rng.gen_range(-5.0..5.), rng.gen_range(-5.0..5.))),
         Acceleration(Vec2::new(0., 0.)),
-        Mass(1.),
+        mass,
         Forces(vec![]),
     ));
 }
@@ -69,7 +78,14 @@ fn continuously_spawn(
         radius: 3.,
         restitution_coeff: 0.95,
     };
-    spawn_random_particle(&mut commands, &mut meshes, &mut materials, &mut rng, p1);
+    spawn_random_particle(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        &mut rng,
+        p1,
+        Mass(1.),
+    );
 }
 
 #[derive(Resource)]

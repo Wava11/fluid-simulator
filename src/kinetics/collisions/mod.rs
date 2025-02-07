@@ -2,7 +2,13 @@ use std::time::Instant;
 
 use super::{forces::Forces, mass::Mass, velocity::Velocity};
 use crate::{fluids::particle::FluidParticle, performance_monitor};
-use bevy::{prelude::*, utils::HashSet};
+use bevy::{
+    ecs::query,
+    math::VectorSpace,
+    prelude::*,
+    tasks::{ComputeTaskPool, ParallelSlice},
+    utils::HashSet,
+};
 
 pub mod position_hashing;
 
@@ -20,43 +26,39 @@ pub fn apply_collisions(
 ) {
     let start = Instant::now();
 
+    // query.par_iter_mut().for_each(
+    //     |(particle1, mut transform1, mass1, velocity1, mut forces1)| {
+    //         let particle_center1 = transform1.translation.xy();
+    //         let entity_cell = position_hash_map.possibly_colliding_particles(particle_center1);
+    //     },
+    // );
+
     let mut collided_pairs = HashSet::<UnorderedEntitiesPair>::new();
     for (x, row_sets) in position_hash_map.map.iter().enumerate() {
         for (y, cell_set) in row_sets.iter().enumerate() {
             let adjacent_cells_particles = position_hash_map.neighbouring_cells_particles(x, y);
+            let possibly_intersecting_particles:Vec<_> = adjacent_cells_particles.union(cell_set).collect();
             for entity1 in cell_set {
-                for entity2 in adjacent_cells_particles.iter() {
+                for &entity2 in possibly_intersecting_particles.iter() {
                     let unordered_entities_pair = UnorderedEntitiesPair::new(*entity1, *entity2);
-                    if !collided_pairs.contains(&unordered_entities_pair) {
-                        let query_result = query.get_many_mut([*entity1, *entity2]);
-                        if let Ok(
-                            [(particle1, transform1, mass1, velocity1, forces1), (particle2, transform2, mass2, velocity2, forces2)],
-                        ) = query_result
-                        {
-                            collide_particles(
-                                &time, particle1, transform1, mass1, velocity1, forces1, particle2,
-                                transform2, mass2, velocity2, forces2,
-                            );
-                        }
-                        collided_pairs.insert(unordered_entities_pair);
+                    if collided_pairs.contains(&unordered_entities_pair) {
+                        continue;
                     }
+                    let query_result = query.get_many_mut([*entity1, *entity2]);
+                    if let Ok(
+                        [(particle1, transform1, mass1, velocity1, forces1), (particle2, transform2, mass2, velocity2, forces2)],
+                    ) = query_result
+                    {
+                        collide_particles(
+                            &time, particle1, transform1, mass1, velocity1, forces1, particle2,
+                            transform2, mass2, velocity2, forces2,
+                        );
+                    }
+                    collided_pairs.insert(unordered_entities_pair);
                 }
             }
         }
     }
-
-    ////////////////////////////////////
-
-    // let mut pairs = query.iter_combinations_mut();
-    // while let Some(
-    //     [(particle1, transform1, mass1, velocity1, forces1), (particle2, mut transform2, mass2, velocity2, mut forces2)],
-    // ) = pairs.fetch_next()
-    // {
-    //     collide_particles(
-    //         &time, particle1, transform1, mass1, velocity1, forces1, particle2, transform2, mass2,
-    //         velocity2, forces2,
-    //     );
-    // }
 
     collision_detection_duration.0 = start.elapsed();
 }

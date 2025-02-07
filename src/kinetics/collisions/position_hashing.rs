@@ -35,7 +35,6 @@ fn update_position_map(
     mut entity_previous_position_map: ResMut<EntityPreviousPositionMap>,
     particles_q: Query<(Entity, &Transform), With<FluidParticle>>,
 ) {
-    // let start = std::time::Instant::now();
     particles_q.iter().for_each(|(entity, transform)| {
         let prev_position = entity_previous_position_map.map.get(&entity);
         let curr_position = transform.translation.xy();
@@ -48,8 +47,6 @@ fn update_position_map(
             .map
             .insert(entity, curr_position);
     });
-    // let duration = start.elapsed();
-    // println!("map update took {:?}", duration);
 }
 
 #[derive(Resource)]
@@ -123,5 +120,11 @@ impl PositionHashMap {
         .fold(HashSet::<Entity>::new(), |acc, curr| {
             acc.union(curr).map(|x| *x).collect::<HashSet<Entity>>()
         })
+    }
+
+    pub fn possibly_colliding_particles(&self, particle_center:Vec2) -> Vec<Entity> {
+        let (cell_x,cell_y) = self.cell_idxs_of(particle_center);
+        let cell_set = &self.map[cell_x][cell_y];
+        cell_set.union(&self.neighbouring_cells_particles(cell_x, cell_y)).map(|x| *x).collect()
     }
 }

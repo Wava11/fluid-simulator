@@ -5,6 +5,7 @@ pub mod forces;
 pub mod gravity;
 pub mod mass;
 pub mod velocity;
+pub mod attraction;
 
 use bevy::prelude::*;
 
@@ -17,6 +18,7 @@ impl Plugin for KineticsPlugin {
                 FixedUpdate,
                 (
                     gravity::apply_gravity,
+                    // attraction::apply_attraction,
                     collisions::apply_collisions,
                     bounds::enforce_bounds,
                     forces::apply_forces,
