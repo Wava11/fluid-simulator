@@ -35,7 +35,7 @@ pub fn apply_collisions(
 
     let mut total = 0;
     let mut checked_pairs = HashSet::<UnorderedEntitiesPair>::new();
-    let mut colliding_pairs = HashSet::<UnorderedEntitiesPair>::new();
+    let mut amount_of_colliding_pairs = 0;
     for (x, row_sets) in position_hash_map.map.iter().enumerate() {
         for (y, cell_set) in row_sets.iter().enumerate() {
             for entity1 in cell_set {
@@ -63,7 +63,7 @@ pub fn apply_collisions(
                             velocity: velocity2,
                         };
                         if collidable_p1.is_colliding(&collidable_p2) {
-                            colliding_pairs.insert(UnorderedEntitiesPair::new(*entity1, entity2));
+                            amount_of_colliding_pairs += 1;
                             let (force1, force2) =
                                 calculate_collision_forces_of_intersecting_particles(
                                     &time,
@@ -91,10 +91,7 @@ pub fn apply_collisions(
             }
         }
     }
-    println!(
-        "{}%",
-        colliding_pairs.len() as f32 / checked_pairs.len() as f32 * 100.
-    );
+    println!("{}, {}", checked_pairs.len(), amount_of_colliding_pairs);
 
     collision_detection_duration.0 = start.elapsed();
 }
