@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use bevy::{
     prelude::*,
     utils::{HashMap, HashSet},
@@ -33,20 +35,23 @@ fn init_maps(mut commands: Commands) {
 fn update_position_map(
     mut positions_map: ResMut<PositionHashMap>,
     mut entity_previous_position_map: ResMut<EntityPreviousPositionMap>,
-    particles_q: Query<(Entity, &Transform), With<FluidParticle>>,
+    particles_q: Query<(Entity, &Transform, &FluidParticle)>,
 ) {
-    particles_q.iter().for_each(|(entity, transform)| {
-        let prev_position = entity_previous_position_map.map.get(&entity);
-        let curr_position = transform.translation.xy();
-        if let Some(prev_position) = prev_position {
-            positions_map.update(*prev_position, curr_position, entity);
-        } else {
-            positions_map.insert(curr_position, entity);
-        }
-        entity_previous_position_map
-            .map
-            .insert(entity, curr_position);
-    });
+    particles_q
+        .iter()
+        .for_each(|(entity, transform, particle)| {
+            let prev_position = entity_previous_position_map.map.get(&entity);
+            let curr_position = transform.translation.xy();
+
+            if let Some(prev_position) = prev_position {
+                positions_map.update(*prev_position, curr_position, particle.radius, entity);
+            } else {
+                positions_map.insert(curr_position, particle.radius, entity);
+            }
+            entity_previous_position_map
+                .map
+                .insert(entity, curr_position);
+        });
 }
 
 #[derive(Resource)]
@@ -84,24 +89,83 @@ impl PositionHashMap {
         }
     }
 
-    fn update(&mut self, prev_position: Vec2, curr_position: Vec2, entity: Entity) {
-        let (prev_cell_x, prev_cell_y) = self.cell_idxs_of(prev_position);
-        let (curr_cell_x, curr_cell_y) = self.cell_idxs_of(curr_position);
+    fn update(&mut self, prev_position: Vec2, curr_position: Vec2, radius: f32, entity: Entity) {
+        self.cells_idxs_of(prev_position, radius)
+            .iter()
+            .for_each(|(prev_cell_x, prev_cell_y)| {
+                self.map[*prev_cell_x][*prev_cell_y].remove(&entity);
+            });
 
-        self.map[prev_cell_x][prev_cell_y].remove(&entity);
-        self.map[curr_cell_x][curr_cell_y].insert(entity);
+        self.cells_idxs_of(curr_position, radius)
+            .iter()
+            .for_each(|(curr_cell_x, curr_cell_y)| {
+                self.map[*curr_cell_x][*curr_cell_y].insert(entity);
+            });
     }
-    fn insert(&mut self, position: Vec2, entity: Entity) {
-        let (cell_x, cell_y) = self.cell_idxs_of(position);
-        self.map[cell_x][cell_y].remove(&entity);
+    fn insert(&mut self, position: Vec2, radius: f32, entity: Entity) {
+        self.cells_idxs_of(position, radius)
+            .iter()
+            .for_each(|(prev_cell_x, prev_cell_y)| {
+                self.map[*prev_cell_x][*prev_cell_y].insert(entity);
+            });
     }
 
     fn cell_idxs_of(&self, position: Vec2) -> (usize, usize) {
-        // println!("position: {:?}", position);
         (
             ((position.x - self.min_x) as usize) / self.cell_side_size,
             ((position.y - self.min_y) as usize) / self.cell_side_size,
         )
+    }
+    fn cells_idxs_of(&self, position: Vec2, radius: f32) -> Vec<(usize, usize)> {
+        let cell_of_center = (
+            ((position.x - self.min_x) as usize) / self.cell_side_size,
+            ((position.y - self.min_y) as usize) / self.cell_side_size,
+        );
+        let mut result: Vec<(usize, usize)> = vec![cell_of_center];
+
+        let left_border_x = (cell_of_center.0 * self.cell_side_size) as f32;
+        let intersects_left = position.x - radius <= left_border_x;
+
+        let upper_border_y = ((cell_of_center.1 + 1) * self.cell_side_size) as f32;
+        let intersects_upper = position.y + radius >= upper_border_y;
+
+        let right_border_x = ((cell_of_center.0 + 1) * self.cell_side_size) as f32;
+        let intersects_right = position.x + radius >= right_border_x;
+
+        let lower_border_y = (cell_of_center.1 * self.cell_side_size) as f32;
+        let intersects_lower = position.y - radius <= lower_border_y;
+
+        if intersects_left {
+            result.push((cell_of_center.0 - 1, cell_of_center.1));
+            if intersects_upper {
+                result.push((cell_of_center.0 - 1, cell_of_center.1 + 1));
+            }
+        }
+        if intersects_upper {
+            result.push((cell_of_center.0, cell_of_center.1 + 1));
+            if intersects_right {
+                result.push((cell_of_center.0 + 1, cell_of_center.1 + 1));
+            }
+        }
+        if intersects_right {
+            result.push((cell_of_center.0 + 1, cell_of_center.1));
+            if intersects_lower {
+                result.push((cell_of_center.0 + 1, cell_of_center.1 - 1));
+            }
+        }
+        if intersects_lower {
+            result.push((cell_of_center.0, cell_of_center.1 - 1));
+            if intersects_left {
+                result.push((cell_of_center.0 - 1, cell_of_center.1 - 1));
+            }
+        }
+        let amount_of_x_cells = (self.max_x - self.min_x) as usize / self.cell_side_size as usize;
+        let amount_of_y_cells = (self.max_y - self.min_y) as usize / self.cell_side_size as usize;
+        result
+            .iter()
+            .filter(|(x, y)| *x <= amount_of_x_cells - 1 && *y <= amount_of_y_cells - 1)
+            .map(|x| *x)
+            .collect()
     }
 
     pub fn neighbouring_cells_particles(&self, x: usize, y: usize) -> HashSet<Entity> {
@@ -122,9 +186,12 @@ impl PositionHashMap {
         })
     }
 
-    pub fn possibly_colliding_particles(&self, particle_center:Vec2) -> Vec<Entity> {
-        let (cell_x,cell_y) = self.cell_idxs_of(particle_center);
+    pub fn possibly_colliding_particles(&self, particle_center: Vec2) -> Vec<Entity> {
+        let (cell_x, cell_y) = self.cell_idxs_of(particle_center);
         let cell_set = &self.map[cell_x][cell_y];
-        cell_set.union(&self.neighbouring_cells_particles(cell_x, cell_y)).map(|x| *x).collect()
+        cell_set
+            .union(&self.neighbouring_cells_particles(cell_x, cell_y))
+            .map(|x| *x)
+            .collect()
     }
 }

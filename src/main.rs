@@ -1,4 +1,3 @@
-use bevy::ecs::schedule::ExecutorKind;
 use bevy::prelude::*;
 use kinetics::KineticsPlugin;
 

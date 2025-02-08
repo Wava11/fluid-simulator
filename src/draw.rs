@@ -31,7 +31,7 @@ fn draw_circle(
         radius: 3.,
         restitution_coeff: 0.97,
     };
-    for _ in 1..1500 {
+    for _ in 1..2000 {
         spawn_random_particle(
             &mut commands,
             &mut meshes,
