@@ -93,7 +93,7 @@ impl PositionHashMap {
     }
     fn insert(&mut self, position: Vec2, entity: Entity) {
         let (cell_x, cell_y) = self.cell_idxs_of(position);
-        self.map[cell_x][cell_y].remove(&entity);
+        self.map[cell_x][cell_y].insert(entity);
     }
 
     fn cell_idxs_of(&self, position: Vec2) -> (usize, usize) {
