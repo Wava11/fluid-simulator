@@ -1,10 +1,14 @@
-use std::time::Duration;
-
 use crate::{
     fluids::particle::FluidParticle,
-    kinetics::{acceleration::Acceleration, bounds::{MAX_X, MAX_Y, MIN_X, MIN_Y}, forces::Forces, mass::Mass, velocity::Velocity},
+    kinetics::{
+        acceleration::Acceleration,
+        bounds::{MAX_X, MAX_Y, MIN_X, MIN_Y},
+        forces::Forces,
+        mass::Mass,
+        velocity::Velocity,
+    },
 };
-use bevy::{math::VectorSpace, prelude::*, time::common_conditions::on_timer};
+use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 pub struct DrawPlugin;
@@ -31,7 +35,7 @@ fn draw_circle(
         radius: 3.,
         restitution_coeff: 0.97,
     };
-    for _ in 1..2000 {
+    for _ in 1..3000 {
         spawn_random_particle(
             &mut commands,
             &mut meshes,
