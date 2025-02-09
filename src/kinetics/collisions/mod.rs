@@ -36,13 +36,13 @@ pub fn apply_collisions(
     let mut total = 0;
     let mut checked_pairs = HashSet::<UnorderedEntitiesPair>::new();
     let mut amount_of_colliding_pairs = 0;
-    for (x, row_sets) in position_hash_map.map.iter().enumerate() {
-        for (y, cell_set) in row_sets.iter().enumerate() {
+    for row_sets in position_hash_map.map.iter() {
+        for cell_set in row_sets.iter() {
             for entity1 in cell_set {
                 for &entity2 in cell_set.iter() {
                     total += 1;
                     let unordered_entities_pair = UnorderedEntitiesPair::new(*entity1, entity2);
-                    if checked_pairs.contains(&unordered_entities_pair) || *entity1 == entity2 {
+                    if *entity1 == entity2 || checked_pairs.contains(&unordered_entities_pair) {
                         continue;
                     }
                     let query_result = query.get_many_mut([*entity1, entity2]);
@@ -91,7 +91,6 @@ pub fn apply_collisions(
             }
         }
     }
-    println!("{}, {}", checked_pairs.len(), amount_of_colliding_pairs);
 
     collision_detection_duration.0 = start.elapsed();
 }

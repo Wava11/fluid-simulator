@@ -1,5 +1,7 @@
 use std::time::Instant;
 
+mod tests;
+
 use bevy::{
     prelude::*,
     utils::{HashMap, HashSet},
@@ -123,17 +125,12 @@ impl PositionHashMap {
         );
         let mut result: Vec<(usize, usize)> = vec![cell_of_center];
 
-        let left_border_x = (cell_of_center.0 * self.cell_side_size) as f32;
-        let intersects_left = position.x - radius <= left_border_x;
+        let cell_border = self.cell_idxs_to_borders(cell_of_center.0, cell_of_center.1);
 
-        let upper_border_y = ((cell_of_center.1 + 1) * self.cell_side_size) as f32;
-        let intersects_upper = position.y + radius >= upper_border_y;
-
-        let right_border_x = ((cell_of_center.0 + 1) * self.cell_side_size) as f32;
-        let intersects_right = position.x + radius >= right_border_x;
-
-        let lower_border_y = (cell_of_center.1 * self.cell_side_size) as f32;
-        let intersects_lower = position.y - radius <= lower_border_y;
+        let intersects_left = position.x - radius <= cell_border.left;
+        let intersects_upper = position.y + radius >= cell_border.up;
+        let intersects_right = position.x + radius >= cell_border.right;
+        let intersects_lower = position.y - radius <= cell_border.down;
 
         if intersects_left {
             result.push((cell_of_center.0 - 1, cell_of_center.1));
@@ -168,6 +165,15 @@ impl PositionHashMap {
             .collect()
     }
 
+    fn cell_idxs_to_borders(&self, cell_x: usize, cell_y: usize) -> Borders {
+        Borders {
+            left: (cell_x * self.cell_side_size) as f32 + self.min_x,
+            up: ((cell_y + 1) * self.cell_side_size) as f32 + self.min_y,
+            right: ((cell_x + 1) * self.cell_side_size) as f32 + self.min_x,
+            down: (cell_y * self.cell_side_size) as f32 + self.min_y,
+        }
+    }
+
     pub fn neighbouring_cells_particles(&self, x: usize, y: usize) -> HashSet<Entity> {
         vec![
             self.map.get(x - 1).map(|row| row.get(y - 1)).flatten(),
@@ -194,4 +200,12 @@ impl PositionHashMap {
             .map(|x| *x)
             .collect()
     }
+}
+
+#[derive(Debug)]
+struct Borders {
+    left: f32,
+    up: f32,
+    right: f32,
+    down: f32,
 }
