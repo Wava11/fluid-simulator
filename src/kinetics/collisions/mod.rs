@@ -55,7 +55,6 @@ pub fn apply_collisions(
     
     collision_detection_duration.0 = start.elapsed();
 
-    println!("{}", checked_pairs.len())
 }
 
 fn collide_particles(
