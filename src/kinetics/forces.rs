@@ -11,11 +11,6 @@ pub fn apply_forces(mut query: Query<(&mut Forces, &Mass, &mut Acceleration)>) {
 
             forces.0.clear();
         });
-    // for (mut forces, Mass(mass), mut acceleration) in query.iter_mut() {
-    //     acceleration.0 = forces.0.iter().sum::<Vec2>() / mass;
-
-    //     forces.0.clear();
-    // }
 }
 
 #[derive(Component, Clone)]

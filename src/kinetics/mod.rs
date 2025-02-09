@@ -1,13 +1,15 @@
 pub mod acceleration;
+pub mod attraction;
 pub mod bounds;
 pub mod collisions;
 pub mod forces;
 pub mod gravity;
 pub mod mass;
 pub mod velocity;
-pub mod attraction;
 
 use bevy::prelude::*;
+
+use crate::controls::toggle_gravity::GravityToggled;
 
 pub struct KineticsPlugin;
 
@@ -17,7 +19,8 @@ impl Plugin for KineticsPlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    gravity::apply_gravity,
+                    gravity::apply_gravity
+                        .run_if(|gravity_toggled: Res<GravityToggled>| gravity_toggled.0),
                     // attraction::apply_attraction,
                     collisions::apply_collisions,
                     bounds::enforce_bounds,

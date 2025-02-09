@@ -6,11 +6,13 @@ mod fluids;
 mod performance_monitor;
 mod kinetics;
 mod particles_counter;
+mod controls;
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
+            controls::ControlsPlugin,
             KineticsPlugin,
             draw::DrawPlugin,
             performance_monitor::PerformanceMonitorPlugin,

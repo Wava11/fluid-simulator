@@ -13,7 +13,7 @@ use bevy::{
 pub mod position_hashing;
 
 pub fn apply_collisions(
-    mut collision_detection_duration: ResMut<performance_monitor::CollisionDetectionDuration>,
+    mut collision_detection_monitor: ResMut<performance_monitor::CollisionDetectionMonitor>,
     position_hash_map: Res<position_hashing::PositionHashMap>,
     time: Res<Time>,
     mut query: Query<(
@@ -29,6 +29,7 @@ pub fn apply_collisions(
     let mut total = 0;
     let mut checked_pairs = HashSet::<UnorderedEntitiesPair>::new();
     let mut amount_of_colliding_pairs = 0;
+
     for row_sets in position_hash_map.map.iter() {
         for cell_set in row_sets.iter() {
             for entity1 in cell_set {
@@ -84,9 +85,10 @@ pub fn apply_collisions(
             }
         }
     }
-    
-    collision_detection_duration.0 = start.elapsed();
 
+    collision_detection_monitor.duration = start.elapsed();
+    collision_detection_monitor.checked_pairs = checked_pairs.len();
+    collision_detection_monitor.colliding_pairs = amount_of_colliding_pairs;
 }
 
 fn calculate_collision_forces_of_intersecting_particles(
@@ -189,4 +191,10 @@ impl UnorderedEntitiesPair {
             UnorderedEntitiesPair { entities: (e2, e1) }
         }
     }
+}
+
+struct CollisionResolution {
+    entity: Entity,
+    new_force: Vec2,
+    new_position: Vec2,
 }

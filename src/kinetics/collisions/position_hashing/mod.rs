@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 mod tests;
 
 use bevy::{
@@ -26,7 +24,7 @@ fn init_maps(mut commands: Commands) {
         map: HashMap::new(),
     });
     commands.insert_resource(PositionHashMap::new(
-        10,
+        6,
         MIN_X as f32,
         MAX_X as f32,
         MIN_Y as f32,
@@ -172,33 +170,6 @@ impl PositionHashMap {
             right: ((cell_x + 1) * self.cell_side_size) as f32 + self.min_x,
             down: (cell_y * self.cell_side_size) as f32 + self.min_y,
         }
-    }
-
-    pub fn neighbouring_cells_particles(&self, x: usize, y: usize) -> HashSet<Entity> {
-        vec![
-            self.map.get(x - 1).map(|row| row.get(y - 1)).flatten(),
-            self.map.get(x - 1).map(|row| row.get(y)).flatten(),
-            self.map.get(x).map(|row| row.get(y - 1)).flatten(),
-            self.map.get(x).map(|row| row.get(y)).flatten(),
-            self.map.get(x + 1).map(|row| row.get(y + 1)).flatten(),
-            self.map.get(x + 1).map(|row| row.get(y)).flatten(),
-            self.map.get(x).map(|row| row.get(y + 1)).flatten(),
-            self.map.get(x).map(|row| row.get(y)).flatten(),
-        ]
-        .into_iter()
-        .flatten()
-        .fold(HashSet::<Entity>::new(), |acc, curr| {
-            acc.union(curr).map(|x| *x).collect::<HashSet<Entity>>()
-        })
-    }
-
-    pub fn possibly_colliding_particles(&self, particle_center: Vec2) -> Vec<Entity> {
-        let (cell_x, cell_y) = self.cell_idxs_of(particle_center);
-        let cell_set = &self.map[cell_x][cell_y];
-        cell_set
-            .union(&self.neighbouring_cells_particles(cell_x, cell_y))
-            .map(|x| *x)
-            .collect()
     }
 }
 
