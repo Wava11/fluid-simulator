@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{hash::Hash, ops::Add, sync::{Arc, Mutex}, time::Instant};
 
 use super::{forces::Forces, mass::Mass, velocity::Velocity};
 use crate::{fluids::particle::FluidParticle, performance_monitor};
@@ -13,6 +13,97 @@ use bevy::{
 pub mod position_hashing;
 
 pub fn apply_collisions(
+    mut collision_detection_monitor: ResMut<performance_monitor::CollisionDetectionMonitor>,
+    position_hash_map: Res<position_hashing::PositionHashMap>,
+    time: Res<Time>,
+    mut query: Query<(
+        &FluidParticle,
+        &mut Transform,
+        &Mass,
+        &Velocity,
+        &mut Forces,
+    )>,
+) {
+    let start = Instant::now();
+    
+    let resolutions = position_hash_map.map.par_splat_map(ComputeTaskPool::get(),None, |_,slice| {
+        let mut amount_of_checked_pairs=0;
+        let mut amount_of_colliding_pairs=0;
+
+        let mut checked_pairs = HashSet::<UnorderedEntitiesPair>::new() ;
+        let mut resolutions:Vec<CollisionResolution> = vec![];
+        for row_sets in slice {
+            for cell_set in row_sets.iter() {
+                for entity1 in cell_set {
+                    for &entity2 in cell_set.iter() {
+                        amount_of_checked_pairs += 1;
+                        let unordered_entities_pair = UnorderedEntitiesPair::new(*entity1, entity2);
+                        if *entity1 == entity2 || checked_pairs.contains(&unordered_entities_pair)  {
+                            continue;
+                        }
+                        amount_of_colliding_pairs += 1;
+                        let query_result = query.get_many([*entity1, entity2]);
+                        if let Ok(
+                            [(particle1, transform1, mass1, velocity1, forces1), (particle2,  transform2, mass2, velocity2, forces2)],
+                        ) = query_result
+                        {
+                            let collidable_p1 = CollidableParticle {
+                                mass: mass1,
+                                particle: particle1,
+                                particle_center: transform1.translation.xy(),
+                                velocity: velocity1,
+                            };
+                            let collidable_p2 = CollidableParticle {
+                                mass: mass2,
+                                particle: particle2,
+                                particle_center: transform2.translation.xy(),
+                                velocity: velocity2,
+                            };
+                            if collidable_p1.is_colliding(&collidable_p2) {
+                                let (force1, force2) =
+                                    calculate_collision_forces_of_intersecting_particles(
+                                        &time,
+                                        collidable_p1,
+                                        collidable_p2,
+                                    );
+    
+                                let (t1, t2) = calculate_new_centers_for_intersecting_particles(
+                                    collidable_p1,
+                                    collidable_p2,
+                                );
+
+                                resolutions.push(CollisionResolution::new(*entity1,entity2,force1,t1));
+                                resolutions.push(CollisionResolution::new(entity2,*entity1,force2,t2));
+
+                            }
+                        }
+                        checked_pairs.insert(unordered_entities_pair);
+                    }
+                }
+            }
+        }
+        (resolutions, amount_of_checked_pairs,amount_of_colliding_pairs)
+    });
+    let amount_of_checked_pairs = resolutions.iter().map(|(_,amount_of_checked_pairs,_)|amount_of_checked_pairs).sum();
+    let amount_of_colliding_pairs = resolutions.iter().map(|(_,_,amount_of_colliding_pairs)|amount_of_colliding_pairs).sum();
+    let resolutions: HashSet<CollisionResolution> = resolutions.iter().map(|(resolutions,_,_)|resolutions).flatten().map(|x|*x).collect();
+    for resolution in resolutions {
+        if let Ok((_,mut transform,_,_,mut forces )) = query.get_mut(resolution.entity) {
+            if resolution.new_force != Vec2::ZERO {
+                forces.0.push(resolution.new_force);
+            }
+            transform.translation = resolution.new_position.extend(transform.translation.z);
+        }
+    }
+
+    
+
+    collision_detection_monitor.checked_pairs = amount_of_checked_pairs;
+    collision_detection_monitor.colliding_pairs = amount_of_colliding_pairs;
+    collision_detection_monitor.duration = start.elapsed();
+}
+
+pub fn apply_collisions_single_threaded(
     mut collision_detection_monitor: ResMut<performance_monitor::CollisionDetectionMonitor>,
     position_hash_map: Res<position_hashing::PositionHashMap>,
     time: Res<Time>,
@@ -193,8 +284,29 @@ impl UnorderedEntitiesPair {
     }
 }
 
+#[derive(Copy,Clone)]
 struct CollisionResolution {
     entity: Entity,
     new_force: Vec2,
     new_position: Vec2,
+    pair: (Entity,Entity)
+}
+impl CollisionResolution{
+    fn new (entity:Entity, other_entity:Entity, new_force: Vec2, new_position:Vec2) -> CollisionResolution {
+        Self{entity,new_force,new_position,pair: (entity.min(other_entity), entity.max(other_entity))}
+    }
+}
+impl Hash for CollisionResolution {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.entity.hash(state);
+        self.pair.hash(state);
+    }
+}
+impl Eq for CollisionResolution {
+    
+}
+impl PartialEq for CollisionResolution {
+    fn eq(&self, other: &Self) -> bool {
+        self.entity == other.entity && self.pair == other.pair
+    }
 }

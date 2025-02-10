@@ -16,6 +16,7 @@ pub struct KineticsPlugin;
 impl Plugin for KineticsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(collisions::position_hashing::PositionHashingPlugin)
+            .add_systems(Startup, bounds::draw_bounds)
             .add_systems(
                 FixedUpdate,
                 (
@@ -23,6 +24,7 @@ impl Plugin for KineticsPlugin {
                         .run_if(|gravity_toggled: Res<GravityToggled>| gravity_toggled.0),
                     // attraction::apply_attraction,
                     collisions::apply_collisions,
+                    // collisions::apply_collisions_single_threaded,
                     bounds::enforce_bounds,
                     forces::apply_forces,
                     acceleration::accelerate_entities,

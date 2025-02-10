@@ -1,19 +1,13 @@
 use core::f32;
 
-use bevy::
-    prelude::*
-;
+use bevy::prelude::*;
 
 use crate::{
     fluids::particle::FluidParticle,
-    kinetics::{
-        mass::Mass,
-        velocity::Velocity,
-    },
+    kinetics::{mass::Mass, velocity::Velocity},
 };
 
 use super::forces::Forces;
-
 
 pub fn enforce_bounds(
     time: Res<Time>,
@@ -31,22 +25,14 @@ pub fn enforce_bounds(
         let collision_force =
             calculate_collision_force(particle_center, &particle, mass, velocity, &time);
 
-        if collision_force!=Vec2::ZERO {
+        if collision_force != Vec2::ZERO {
             forces.0.push(collision_force);
         }
 
         if collision_force.x != 0. || collision_force.y != 0. {
             transform.translation = transform.translation.clamp(
-                Vec3::new(
-                    MIN_X + particle.radius,
-                    MIN_Y + particle.radius,
-                    f32::MIN,
-                ),
-                Vec3::new(
-                    MAX_X - particle.radius,
-                    MAX_Y - particle.radius,
-                    f32::MAX,
-                ),
+                Vec3::new(MIN_X + particle.radius, MIN_Y + particle.radius, f32::MIN),
+                Vec3::new(MAX_X - particle.radius, MAX_Y - particle.radius, f32::MAX),
             );
         }
     }
@@ -68,18 +54,30 @@ fn calculate_collision_force(
     let particle_up = particle_center.y + particle.radius;
 
     let mut new_velocity = *velocity;
-    if (particle_left < MIN_X) || (particle_right>MAX_X){
+    if (particle_left < MIN_X) || (particle_right > MAX_X) {
         new_velocity.x = -velocity.x;
     }
-    if (particle_down < MIN_Y) || (particle_up>MAX_Y) {
+    if (particle_down < MIN_Y) || (particle_up > MAX_Y) {
         new_velocity.y = -velocity.y;
     }
 
     let impulse = mass * (new_velocity - velocity);
 
-    impulse*particle.restitution_coeff / time.delta().as_secs_f32()
+    impulse * particle.restitution_coeff / time.delta().as_secs_f32()
 }
 
+pub fn draw_bounds(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let bounds_shape = meshes.add(Rectangle::new(MAX_X - MIN_X, MAX_Y - MIN_Y));
+    commands.spawn((
+        Mesh2d(bounds_shape),
+        MeshMaterial2d(materials.add(Color::hsla(0., 0., 1., 0.1))),
+        Transform::from_xyz(0., 0., -1.),
+    ));
+}
 
 pub const MIN_X: f32 = -200.;
 pub const MAX_X: f32 = 200.;

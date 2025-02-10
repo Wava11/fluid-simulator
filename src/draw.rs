@@ -62,7 +62,7 @@ fn spawn_random_particle(
         Transform::from_xyz(
             rng.gen_range(MIN_X..MAX_X),
             rng.gen_range(MIN_Y..MAX_Y),
-            0 as f32,
+            0.,
         ),
         // Velocity(Vec2::ZERO),
         Velocity(Vec2::new(rng.gen_range(-5.0..5.), rng.gen_range(-5.0..5.))),
