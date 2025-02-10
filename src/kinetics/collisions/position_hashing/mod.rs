@@ -1,5 +1,7 @@
 mod tests;
 
+use std::time::{Duration, Instant};
+
 use bevy::{
     prelude::*,
     utils::{HashMap, HashSet},
@@ -37,6 +39,8 @@ fn update_position_map(
     mut entity_previous_position_map: ResMut<EntityPreviousPositionMap>,
     particles_q: Query<(Entity, &Transform, &FluidParticle)>,
 ) {
+    let start = Instant::now();
+    positions_map.duration = Duration::from_secs(0);
     particles_q
         .iter()
         .for_each(|(entity, transform, particle)| {
@@ -52,6 +56,11 @@ fn update_position_map(
                 .map
                 .insert(entity, curr_position);
         });
+    println!(
+        "total: {:?}, get cells: {:?}",
+        start.elapsed(),
+        positions_map.duration
+    );
 }
 
 #[derive(Resource)]
@@ -61,12 +70,13 @@ struct EntityPreviousPositionMap {
 
 #[derive(Resource)]
 pub struct PositionHashMap {
-    pub map: Vec<Vec<HashSet<Entity>>>,
+    pub map: Vec<Vec<Vec<Entity>>>,
     cell_side_size: usize,
     min_x: f32,
     max_x: f32,
     min_y: f32,
     max_y: f32,
+    duration: Duration,
 }
 
 impl PositionHashMap {
@@ -80,12 +90,13 @@ impl PositionHashMap {
         let amount_of_x_cells = (max_x - min_x) as usize / cell_side_size as usize;
         let amount_of_y_cells = (max_y - min_y) as usize / cell_side_size as usize;
         PositionHashMap {
-            map: vec![vec![HashSet::new(); amount_of_y_cells]; amount_of_x_cells],
+            map: vec![vec![Vec::with_capacity(8); amount_of_y_cells]; amount_of_x_cells],
             cell_side_size: cell_side_size,
             min_x: min_x,
             max_x: max_x,
             min_y: min_y,
             max_y: max_y,
+            duration: Duration::from_secs(0),
         }
     }
 
@@ -93,20 +104,20 @@ impl PositionHashMap {
         self.cells_idxs_of(prev_position, radius)
             .iter()
             .for_each(|(prev_cell_x, prev_cell_y)| {
-                self.map[*prev_cell_x][*prev_cell_y].remove(&entity);
+                self.map[*prev_cell_x][*prev_cell_y].retain(|e| *e != entity);
             });
 
         self.cells_idxs_of(curr_position, radius)
             .iter()
             .for_each(|(curr_cell_x, curr_cell_y)| {
-                self.map[*curr_cell_x][*curr_cell_y].insert(entity);
+                self.map[*curr_cell_x][*curr_cell_y].push(entity);
             });
     }
     fn insert(&mut self, position: Vec2, radius: f32, entity: Entity) {
         self.cells_idxs_of(position, radius)
             .iter()
             .for_each(|(prev_cell_x, prev_cell_y)| {
-                self.map[*prev_cell_x][*prev_cell_y].insert(entity);
+                self.map[*prev_cell_x][*prev_cell_y].push(entity);
             });
     }
 
@@ -116,12 +127,14 @@ impl PositionHashMap {
             ((position.y - self.min_y) as usize) / self.cell_side_size,
         )
     }
-    fn cells_idxs_of(&self, position: Vec2, radius: f32) -> Vec<(usize, usize)> {
+    fn cells_idxs_of(&mut self, position: Vec2, radius: f32) -> Vec<(usize, usize)> {
+        let start = Instant::now();
         let cell_of_center = (
             ((position.x - self.min_x) as usize) / self.cell_side_size,
             ((position.y - self.min_y) as usize) / self.cell_side_size,
         );
-        let mut result: Vec<(usize, usize)> = vec![cell_of_center];
+        let mut result: Vec<(usize, usize)> = Vec::with_capacity(9);
+        result.push(cell_of_center);
 
         let cell_border = self.cell_idxs_to_borders(cell_of_center.0, cell_of_center.1);
 
@@ -156,11 +169,16 @@ impl PositionHashMap {
         }
         let amount_of_x_cells = (self.max_x - self.min_x) as usize / self.cell_side_size as usize;
         let amount_of_y_cells = (self.max_y - self.min_y) as usize / self.cell_side_size as usize;
-        result
+
+
+
+        let result = result
             .iter()
             .filter(|(x, y)| *x <= amount_of_x_cells - 1 && *y <= amount_of_y_cells - 1)
             .map(|x| *x)
-            .collect()
+            .collect();
+        self.duration += start.elapsed();
+        result
     }
 
     fn cell_idxs_to_borders(&self, cell_x: usize, cell_y: usize) -> Borders {
