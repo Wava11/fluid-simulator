@@ -56,11 +56,11 @@ fn update_position_map(
                 .map
                 .insert(entity, curr_position);
         });
-    println!(
-        "total: {:?}, get cells: {:?}",
-        start.elapsed(),
-        positions_map.duration
-    );
+    // println!(
+    //     "total: {:?}, get cells: {:?}",
+    //     start.elapsed(),
+    //     positions_map.duration
+    // );
 }
 
 #[derive(Resource)]
@@ -113,6 +113,7 @@ impl PositionHashMap {
                 self.map[*curr_cell_x][*curr_cell_y].push(entity);
             });
     }
+
     fn insert(&mut self, position: Vec2, radius: f32, entity: Entity) {
         self.cells_idxs_of(position, radius)
             .iter()
@@ -128,7 +129,7 @@ impl PositionHashMap {
         )
     }
     fn cells_idxs_of(&mut self, position: Vec2, radius: f32) -> Vec<(usize, usize)> {
-        let start = Instant::now();
+        // let start = Instant::now();
         let cell_of_center = (
             ((position.x - self.min_x) as usize) / self.cell_side_size,
             ((position.y - self.min_y) as usize) / self.cell_side_size,
@@ -170,14 +171,12 @@ impl PositionHashMap {
         let amount_of_x_cells = (self.max_x - self.min_x) as usize / self.cell_side_size as usize;
         let amount_of_y_cells = (self.max_y - self.min_y) as usize / self.cell_side_size as usize;
 
-
-
         let result = result
             .iter()
             .filter(|(x, y)| *x <= amount_of_x_cells - 1 && *y <= amount_of_y_cells - 1)
             .map(|x| *x)
             .collect();
-        self.duration += start.elapsed();
+        // self.duration += start.elapsed();
         result
     }
 
