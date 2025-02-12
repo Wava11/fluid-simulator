@@ -39,7 +39,7 @@ fn update_position_map(
     mut entity_previous_position_map: ResMut<EntityPreviousPositionMap>,
     particles_q: Query<(Entity, &Transform, &FluidParticle)>,
 ) {
-    let start = Instant::now();
+    // let start = Instant::now();
     positions_map.duration = Duration::from_secs(0);
     particles_q
         .iter()
@@ -100,6 +100,13 @@ impl PositionHashMap {
         }
     }
 
+    pub fn get_amount_of_x_cells(&self)->usize {
+        (self.max_x - self.min_x) as usize / self.cell_side_size as usize
+    }
+    pub fn get_amount_of_y_cells(&self)->usize {
+        (self.max_y - self.min_y) as usize / self.cell_side_size as usize
+    }
+
     fn update(&mut self, prev_position: Vec2, curr_position: Vec2, radius: f32, entity: Entity) {
         self.cells_idxs_of(prev_position, radius)
             .iter()
@@ -122,7 +129,7 @@ impl PositionHashMap {
             });
     }
 
-    fn cell_idxs_of(&self, position: Vec2) -> (usize, usize) {
+    pub fn cell_idxs_of(&self, position: Vec2) -> (usize, usize) {
         (
             ((position.x - self.min_x) as usize) / self.cell_side_size,
             ((position.y - self.min_y) as usize) / self.cell_side_size,

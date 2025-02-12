@@ -33,9 +33,9 @@ fn draw_circle(
 
     let p1 = FluidParticle {
         radius: 3.,
-        restitution_coeff: 0.97,
+        restitution_coeff: 0.8,
     };
-    for _ in 1..3000 {
+    for _ in 1..1000 {
         spawn_random_particle(
             &mut commands,
             &mut meshes,

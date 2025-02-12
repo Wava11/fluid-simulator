@@ -1,13 +1,9 @@
-use std::{hash::Hash, ops::Add, sync::{Arc, Mutex}, time::Instant};
+use std::{hash::Hash, time::Instant};
 
-use super::{forces::Forces, mass::Mass, velocity::Velocity};
+use super::{forces::Forces, mass::Mass, utils::pairs::UnorderedEntitiesPair, velocity::Velocity};
 use crate::{fluids::particle::FluidParticle, performance_monitor};
 use bevy::{
-    ecs::query,
-    math::VectorSpace,
-    prelude::*,
-    tasks::{ComputeTaskPool, ParallelSlice},
-    utils::HashSet,
+    math::VectorSpace, prelude::*, tasks::{ComputeTaskPool, ParallelSlice}, utils::HashSet
 };
 
 pub mod position_hashing;
@@ -26,25 +22,25 @@ pub fn apply_collisions(
 ) {
     let start = Instant::now();
     
-    let resolutions = position_hash_map.map.par_splat_map(ComputeTaskPool::get(),None, |_,slice| {
+    let resolutions = position_hash_map.map.par_splat_map(ComputeTaskPool::get(),Some(1), |_,slice| {
         let mut amount_of_checked_pairs=0;
         let mut amount_of_colliding_pairs=0;
 
         let mut checked_pairs = HashSet::<UnorderedEntitiesPair>::new() ;
         let mut resolutions:Vec<CollisionResolution> = vec![];
-        for row_sets in slice {
-            for cell_set in row_sets.iter() {
-                for entity1 in cell_set {
-                    for &entity2 in cell_set.iter() {
+        for col_sets in slice {
+            for cell_entities in col_sets.iter() {
+                for (i,&entity1) in cell_entities.iter().enumerate() {
+                    for &entity2 in cell_entities[i+1..].iter() {
                         amount_of_checked_pairs += 1;
-                        let unordered_entities_pair = UnorderedEntitiesPair::new(*entity1, entity2);
-                        if *entity1 == entity2 || checked_pairs.contains(&unordered_entities_pair)  {
+                        let unordered_entities_pair = UnorderedEntitiesPair::new(entity1, entity2);
+                        if checked_pairs.contains(&unordered_entities_pair)  {
                             continue;
                         }
                         amount_of_colliding_pairs += 1;
-                        let query_result = query.get_many([*entity1, entity2]);
+                        let query_result = query.get_many([entity1, entity2]);
                         if let Ok(
-                            [(particle1, transform1, mass1, velocity1, forces1), (particle2,  transform2, mass2, velocity2, forces2)],
+                            [(particle1, transform1, mass1, velocity1, _), (particle2,  transform2, mass2, velocity2, _)],
                         ) = query_result
                         {
                             let collidable_p1 = CollidableParticle {
@@ -72,8 +68,8 @@ pub fn apply_collisions(
                                     collidable_p2,
                                 );
 
-                                resolutions.push(CollisionResolution::new(*entity1,entity2,force1,t1));
-                                resolutions.push(CollisionResolution::new(entity2,*entity1,force2,t2));
+                                resolutions.push(CollisionResolution::new(entity1,entity2,force1,t1));
+                                resolutions.push(CollisionResolution::new(entity2,entity1,force2,t2));
 
                             }
                         }
@@ -91,7 +87,7 @@ pub fn apply_collisions(
         if let Ok((_,mut transform,_,_,mut forces )) = query.get_mut(resolution.entity) {
             if resolution.new_force != Vec2::ZERO {
                 forces.0.push(resolution.new_force);
-            }
+            } 
             transform.translation = resolution.new_position.extend(transform.translation.z);
         }
     }
@@ -103,7 +99,7 @@ pub fn apply_collisions(
     collision_detection_monitor.duration = start.elapsed();
 }
 
-pub fn apply_collisions_single_threaded(
+pub fn _apply_collisions_single_threaded(
     mut collision_detection_monitor: ResMut<performance_monitor::CollisionDetectionMonitor>,
     position_hash_map: Res<position_hashing::PositionHashMap>,
     time: Res<Time>,
@@ -117,7 +113,6 @@ pub fn apply_collisions_single_threaded(
 ) {
     let start = Instant::now();
 
-    let mut total = 0;
     let mut checked_pairs = HashSet::<UnorderedEntitiesPair>::new();
     let mut amount_of_colliding_pairs = 0;
 
@@ -125,7 +120,6 @@ pub fn apply_collisions_single_threaded(
         for cell_set in row_sets.iter() {
             for entity1 in cell_set {
                 for &entity2 in cell_set.iter() {
-                    total += 1;
                     let unordered_entities_pair = UnorderedEntitiesPair::new(*entity1, entity2);
                     if *entity1 == entity2 || checked_pairs.contains(&unordered_entities_pair) {
                         continue;
@@ -234,11 +228,16 @@ impl<'a> CollidableParticle<'a> {
     }
 
     fn velocities_after_collision_with(&self, other: &CollidableParticle) -> (Vec2, Vec2) {
-        let collision_line = (other.particle_center - self.particle_center).normalize();
+        let collision_line = self.get_collision_line(other);
 
         if self.is_moving_together_towards(other) {
             return (self.velocity.0, other.velocity.0);
         }
+
+        // if self.velocity.0.length()<0.1 && other.velocity.0.length()<0.1 {
+        //     // println!("AAAAAAA");
+        //     return (Vec2::new(0.,5.*self.particle.radius),Vec2::new(5.*other.particle.radius,0.));
+        // }
 
         let self_parallel_velocity = self.velocity.0.dot(collision_line) * collision_line;
         let self_perpendicular_velocity = self.velocity.0 - self_parallel_velocity;
@@ -260,8 +259,17 @@ impl<'a> CollidableParticle<'a> {
         )
     }
 
+    fn get_collision_line(&self, other: &CollidableParticle) -> Vec2 {
+        // if self.particle_center == other.particle_center {
+        //     Vec2::new(0.,1.)
+        // } else { 
+        //     (other.particle_center - self.particle_center).normalize()
+        // }
+        (other.particle_center - self.particle_center).normalize()
+    }
+    
     fn is_moving_together_towards(&self, other: &CollidableParticle) -> bool {
-        let collision_line = (other.particle_center - self.particle_center).normalize();
+        let collision_line = self.get_collision_line(other);
 
         let relative_velocity = other.velocity.0 - self.velocity.0;
         let relative_velocity_projected_onto_collision_line = relative_velocity.dot(collision_line);
@@ -269,20 +277,6 @@ impl<'a> CollidableParticle<'a> {
     }
 }
 
-#[derive(Eq, Hash, PartialEq)]
-struct UnorderedEntitiesPair {
-    entities: (Entity, Entity),
-}
-
-impl UnorderedEntitiesPair {
-    fn new(e1: Entity, e2: Entity) -> UnorderedEntitiesPair {
-        if e1 < e2 {
-            UnorderedEntitiesPair { entities: (e1, e2) }
-        } else {
-            UnorderedEntitiesPair { entities: (e2, e1) }
-        }
-    }
-}
 
 #[derive(Copy,Clone)]
 struct CollisionResolution {
@@ -293,7 +287,12 @@ struct CollisionResolution {
 }
 impl CollisionResolution{
     fn new (entity:Entity, other_entity:Entity, new_force: Vec2, new_position:Vec2) -> CollisionResolution {
-        Self{entity,new_force,new_position,pair: (entity.min(other_entity), entity.max(other_entity))}
+        Self {
+            entity,
+            new_force,
+            new_position,
+            pair: (entity.min(other_entity), entity.max(other_entity))
+        }
     }
 }
 impl Hash for CollisionResolution {
